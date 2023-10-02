@@ -18,10 +18,10 @@ def Init(key, nonce):
 #repeated keystreams
 def Update(previous):
     zero_key = b'\00'*16
-    updated_nonce = (int.from_bytes(previous, byteorder="big")+1).to_bytes(16, byteorder="big")
+    #updated_nonce = (int.from_bytes(previous, byteorder="big")+1).to_bytes(16, byteorder="big")
     ctr = Counter.new(128, initial_value=int.from_bytes(previous, byteorder="big"))
-    cipher = AES.new(zero_key, AES.MODE_CTR, counter=ctr)
-    return cipher, updated_nonce
+    cipher = AES.new(zero_key, AES.MODE_CTR,  counter=ctr)
+    return cipher
 
 #encrypts a plaintext block using a stateful cipher
 #takes in the plaintext, a 128 bit key, and a 128 bit nonce
@@ -35,9 +35,9 @@ def stateful_encrypt(plaintext, key, nonce):
     for i in range(0, len(plaintext), 16):
         block = plaintext[i:i+16]
         keystream = cipher.encrypt(bytes([0]*len(block)))
-        #print(keystream)
+        print(keystream)
         ciphertext_blocks.append(xor(block, keystream))
-        cipher, nonce = Update(nonce)
+        cipher = Update(keystream)
 
     return b''.join(ciphertext_blocks)
 
