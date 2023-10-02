@@ -1,6 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util import Counter
+from Crypto.Util.Padding import pad, unpad
 
 #xor operation that takes in two strings of bytes
 def xor(a, b):
@@ -8,20 +9,30 @@ def xor(a, b):
 
 #initialize AES cipher using a 128 bit key and 128 bit nonce
 def Init(key, nonce):
+    '''
     ctr = Counter.new(128, initial_value=int.from_bytes(nonce, byteorder= "big"))
     cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
     return cipher, nonce
+    '''
+    cipher = AES.new(key, AES.MODE_CBC, nonce)
+    return cipher
 
 #updates the cipher (which is being used as the keystream in this situation)
 #takes in the previous state of the cipher and updates it by incrementing the nonce
 #for each block of plaintext. Also returns the updated nonce so that there are no
 #repeated keystreams
 def Update(previous):
+    '''
     zero_key = b'\00'*16
     #updated_nonce = (int.from_bytes(previous, byteorder="big")+1).to_bytes(16, byteorder="big")
     ctr = Counter.new(128, initial_value=int.from_bytes(previous, byteorder="big"))
+    #print(ctr)
     cipher = AES.new(zero_key, AES.MODE_CTR,  counter=ctr)
     return cipher
+    '''
+    zero_key = b'\00'*16
+    new_cipher = AES.new(zero_key, AES.MODE_CBC, previous)
+    return new_cipher
 
 #encrypts a plaintext block using a stateful cipher
 #takes in the plaintext, a 128 bit key, and a 128 bit nonce
@@ -29,15 +40,31 @@ def Update(previous):
 #while updating the nonce used for each block so that two blocks are not
 #encrypted using the same keystream
 def stateful_encrypt(plaintext, key, nonce):
+    '''
     cipher, nonce = Init(key, nonce)
     ciphertext_blocks = []
 
     for i in range(0, len(plaintext), 16):
         block = plaintext[i:i+16]
         keystream = cipher.encrypt(bytes([0]*len(block)))
-        print(keystream)
+        print(keystream.hex())
         ciphertext_blocks.append(xor(block, keystream))
         cipher = Update(keystream)
+
+    return b''.join(ciphertext_blocks)
+    '''
+    cipher = Init(key, nonce)
+    ciphertext_blocks = []
+    previous_state = nonce
+
+    for i in range(0, len(plaintext), 16):
+        block = plaintext[i:i+16]
+        if len(block) < 16:
+            block = pad(block, 16)
+        encrypted_block = cipher.encrypt(block)
+        ciphertext_blocks.append(encrypted_block)
+        previous_state = encrypted_block
+        cipher = Update(previous_state)
 
     return b''.join(ciphertext_blocks)
 
@@ -77,3 +104,6 @@ print(f"Length of ciphertext in bits: {len(ciphertext_2) * 8}")
 
 print(f"Length of ciphertext_hex in characters: {len(ciphertext_2hex)}")  
 print(f"Length of ciphertext_hex in bits: {len(ciphertext_2hex) * 4}")  
+
+
+question1btext = "Stream ciphers generate pseudorandom bits from a key and a nonce and encrypt the plaintext by XORing it with these pseudorandom bits, similar to the one time pad."
