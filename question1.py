@@ -26,7 +26,7 @@ def Update(previous):
 #breaks the plaintext into blocks and then uniquely encodes each block
 #while updating the nonce used for each block so that two blocks are not
 #encrypted using the same keystream
-def stateful_encrypt(plaintext, key, nonce):
+def stateful_sc(plaintext, key, nonce):
     cipher = Init(key, nonce) #create the cipher
     ciphertext_blocks = [] #create the array that holds the encrypted blocks
     for i in range(0, len(plaintext), 16):
@@ -47,6 +47,26 @@ def stateful_encrypt(plaintext, key, nonce):
 
     return b''.join(ciphertext_blocks) #join all the ciphertext blocks together and return
 
+def secure_PRP(key, input_block):
+    cipher = AES.new(key, AES.MODE_CBC, iv=0x00)
+    return cipher.encrypt(input_block)
+
+
+def ctr_sc(plaintext, key, nonce):
+    ciphertext_blocks = []
+    for i in range(0, len(plaintext), 16):
+
+        block = plaintext[i:i+16]
+        counter = i // 16
+        input_block = nonce + counter
+        zero_key = b'\x00'*16
+        keystream = secure_PRP(zero_key,input_block)
+        encrypted_block = xor(block, keystream)
+        ciphertext_blocks.append(encrypted_block)
+
+    return b''.join(ciphertext_blocks)
+
+
 question1text = "Stream ciphers generate pseudorandom bits from a key and a nonce and encrypt the plaintext by XORing it with these pseudorandom bits, similar to the one time pad."
 textforless = "match this short length"
 question1bytes = question1text.encode('iso-8859-1')
@@ -54,13 +74,13 @@ textforless_bytes = textforless.encode('iso-8859-1')
 key = bytes.fromhex("0205f285961decd343ef9f9f9f9fcebc")
 nonce = bytes.fromhex("0c69d61d0f768968c956238af12aeba1")
 
-ciphertext = stateful_encrypt(question1bytes, key, nonce)
+ciphertext = stateful_sc(question1bytes, key, nonce)
 ciphertext_hex = ciphertext.hex()
 print(ciphertext_hex)
 
 print("\n")
 
-ciphertext_2 = stateful_encrypt(textforless_bytes, key, nonce)
+ciphertext_2 = stateful_sc(textforless_bytes, key, nonce)
 ciphertext_2hex = ciphertext_2.hex()
 print(ciphertext_2hex)
 
