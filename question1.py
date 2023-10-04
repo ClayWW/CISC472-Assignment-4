@@ -9,30 +9,17 @@ def xor(a, b):
 
 #initialize AES cipher using a 128 bit key and 128 bit nonce
 def Init(key, nonce):
-    '''
-    ctr = Counter.new(128, initial_value=int.from_bytes(nonce, byteorder= "big"))
-    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
-    return cipher, nonce
-    '''
-    cipher = AES.new(key, AES.MODE_CBC, nonce)
-    return cipher
+    cipher = AES.new(key, AES.MODE_CBC, nonce) #create the cipher and initialize it with the key and the nonce
+    return cipher #return the newly initialized cipher
 
 #updates the cipher (which is being used as the keystream in this situation)
 #takes in the previous state of the cipher and updates it by incrementing the nonce
 #for each block of plaintext. Also returns the updated nonce so that there are no
 #repeated keystreams
 def Update(previous):
-    '''
-    zero_key = b'\00'*16
-    #updated_nonce = (int.from_bytes(previous, byteorder="big")+1).to_bytes(16, byteorder="big")
-    ctr = Counter.new(128, initial_value=int.from_bytes(previous, byteorder="big"))
-    #print(ctr)
-    cipher = AES.new(zero_key, AES.MODE_CTR,  counter=ctr)
-    return cipher
-    '''
-    zero_key = b'\00'*16
-    new_cipher = AES.new(zero_key, AES.MODE_CBC, previous)
-    return new_cipher
+    zero_key = b'\00'*16 #use a zero key so that the cipher is initialized with the previous keystream
+    new_cipher = AES.new(zero_key, AES.MODE_CBC, previous) #pass the previous keystream into the cipher to create a new (updated) keystream
+    return new_cipher #return the fresh cipher
 
 #encrypts a plaintext block using a stateful cipher
 #takes in the plaintext, a 128 bit key, and a 128 bit nonce
@@ -40,31 +27,22 @@ def Update(previous):
 #while updating the nonce used for each block so that two blocks are not
 #encrypted using the same keystream
 def stateful_encrypt(plaintext, key, nonce):
-    '''
-    cipher, nonce = Init(key, nonce)
-    ciphertext_blocks = []
+    cipher = Init(key, nonce) #create the cipher
+    ciphertext_blocks = [] #create the array that holds the encrypted blocks
 
     for i in range(0, len(plaintext), 16):
-        block = plaintext[i:i+16]
-        keystream = cipher.encrypt(bytes([0]*len(block)))
-        print(keystream.hex())
-        ciphertext_blocks.append(xor(block, keystream))
-        cipher = Update(keystream)
-
-    return b''.join(ciphertext_blocks)
-    '''
-    cipher = Init(key, nonce)
-    ciphertext_blocks = []
-    previous_state = nonce
-
-    for i in range(0, len(plaintext), 16):
-        block = plaintext[i:i+16]
-        if len(block) < 16:
-            block = pad(block, 16)
-        encrypted_block = cipher.encrypt(block)
-        ciphertext_blocks.append(encrypted_block)
-        previous_state = encrypted_block
-        cipher = Update(previous_state)
+        block = plaintext[i:i+16] 
+        if(len(block) < 16):
+            full_keystream = cipher.encrypt(bytes([0]*16))
+            keystream = full_keystream[:len(block)]
+            encrypted_block = xor(block, keystream) #xor the keystream with the block
+            ciphertext_blocks.append(encrypted_block) #add the encrypted block to the array
+            cipher = Update(full_keystream)
+        else:
+            keystream = cipher.encrypt(bytes([0]*16))
+            encrypted_block = xor(block, keystream) #xor the keystream with the block
+            ciphertext_blocks.append(encrypted_block) #add the encrypted block to the array
+            cipher = Update(keystream) #pass the keystream into the update function to generate a fresh keystream for the next block
 
     return b''.join(ciphertext_blocks)
 
