@@ -30,8 +30,8 @@ def stateful_encrypt(plaintext, key, nonce):
     cipher = Init(key, nonce) #create the cipher
     ciphertext_blocks = [] #create the array that holds the encrypted blocks
     for i in range(0, len(plaintext), 16):
-        block = plaintext[i:i+16]
-        is_last_block = (i + 16) >= len(plaintext) 
+        block = plaintext[i:i+16] #create the block by taking the next 16 bytes of plaintext
+        is_last_block = (i + 16) >= len(plaintext) #check to see if this iteration is handling the final block or not
         if(len(block) < 16): #case for the final block if it is not a full block
             full_keystream = cipher.encrypt(bytes([0]*16)) #create a full keystream that is 128 bits
             keystream = full_keystream[:len(block)] #truncate the keystream to match the size of the block
