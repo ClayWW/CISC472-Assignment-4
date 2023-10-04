@@ -17,7 +17,7 @@ def Init(key, nonce):
 #for each block of plaintext. Also returns the updated nonce so that there are no
 #repeated keystreams
 def Update(previous):
-    zero_key = b'\00'*16 #use a zero key so that the cipher is initialized with the previous keystream
+    zero_key = b'\00'*16 #use a zero key so that the cipher is initialized with the previous keystream (previous state)
     new_cipher = AES.new(zero_key, AES.MODE_CBC, previous) #pass the previous keystream into the cipher to create a new (updated) keystream
     return new_cipher #return the fresh cipher
 
@@ -29,22 +29,23 @@ def Update(previous):
 def stateful_encrypt(plaintext, key, nonce):
     cipher = Init(key, nonce) #create the cipher
     ciphertext_blocks = [] #create the array that holds the encrypted blocks
-
     for i in range(0, len(plaintext), 16):
-        block = plaintext[i:i+16] 
-        if(len(block) < 16):
-            full_keystream = cipher.encrypt(bytes([0]*16))
-            keystream = full_keystream[:len(block)]
-            encrypted_block = xor(block, keystream) #xor the keystream with the block
+        block = plaintext[i:i+16]
+        is_last_block = (i + 16) >= len(plaintext) 
+        if(len(block) < 16): #case for the final block if it is not a full block
+            full_keystream = cipher.encrypt(bytes([0]*16)) #create a full keystream that is 128 bits
+            keystream = full_keystream[:len(block)] #truncate the keystream to match the size of the block
+            encrypted_block = xor(block, keystream) #xor the truncated keystream with the block
             ciphertext_blocks.append(encrypted_block) #add the encrypted block to the array
-            cipher = Update(full_keystream)
-        else:
+            #do not need to update the cipher because being in this first if means that we are done after this
+        else: #case for either a full block or a final block that is full
             keystream = cipher.encrypt(bytes([0]*16))
             encrypted_block = xor(block, keystream) #xor the keystream with the block
             ciphertext_blocks.append(encrypted_block) #add the encrypted block to the array
-            cipher = Update(keystream) #pass the keystream into the update function to generate a fresh keystream for the next block
+            if not is_last_block: #no need to update the keystream if we're on the final block
+                cipher = Update(keystream) #pass the keystream into the update function to generate a fresh keystream for the next block
 
-    return b''.join(ciphertext_blocks)
+    return b''.join(ciphertext_blocks) #join all the ciphertext blocks together and return
 
 question1text = "Stream ciphers generate pseudorandom bits from a key and a nonce and encrypt the plaintext by XORing it with these pseudorandom bits, similar to the one time pad."
 textforless = "match this short length"
