@@ -9,8 +9,8 @@ def xor(a, b):
 
 #initialize AES cipher using a 128 bit key and 128 bit nonce
 def Init(key, nonce):
-    cipher = AES.new(key, AES.MODE_CBC, nonce) #create the cipher and initialize it with the key and the nonce
-    return cipher #return the newly initialized cipher
+    cipher = AES.new(key, AES.MODE_ECB) #create the cipher and initialize it with the key and the nonce
+    return cipher.encrypt(nonce) #return the newly initialized cipher
 
 #updates the cipher (which is being used as the keystream in this situation)
 #takes in the previous state of the cipher and updates it by incrementing the nonce
@@ -18,16 +18,28 @@ def Init(key, nonce):
 #repeated keystreams
 def Update(previous):
     zero_key = b'\00'*16 #use a zero key so that the cipher is initialized with the previous keystream (previous state)
-    new_cipher = AES.new(zero_key, AES.MODE_CBC, previous) #pass the previous keystream into the cipher to create a new (updated) keystream
-    return new_cipher #return the fresh cipher
+    new_cipher = AES.new(zero_key, AES.MODE_ECB) #pass the previous keystream into the cipher to create a new (updated) keystream
+    return new_cipher.encrypt(previous) #return the fresh cipher
+
+def stateful_sc(plaintext, key, nonce):
+    keystream = Init(key, nonce)
+    ciphertext_blocks = []
+    for i in range(0, len(plaintext), 16):
+        block = plaintext[i:i+16]
+        encrypted_block = xor(block, keystream[:len(block)])
+        ciphertext_blocks.append(encrypted_block)
+        keystream = Update(keystream)
+
+    return b''.join(ciphertext_blocks)
 
 #encrypts a plaintext block using a stateful cipher
 #takes in the plaintext, a 128 bit key, and a 128 bit nonce
 #breaks the plaintext into blocks and then uniquely encodes each block
 #while updating the nonce used for each block so that two blocks are not
 #encrypted using the same keystream
+'''
 def stateful_sc(plaintext, key, nonce):
-    cipher = Init(key, nonce) #create the cipher
+    keystream = Init(key, nonce) #create the cipher
     ciphertext_blocks = [] #create the array that holds the encrypted blocks
     for i in range(0, len(plaintext), 16):
         block = plaintext[i:i+16] #create the block by taking the next 16 bytes of plaintext
@@ -46,7 +58,7 @@ def stateful_sc(plaintext, key, nonce):
                 cipher = Update(keystream) #pass the keystream into the update function to generate a fresh keystream for the next block
 
     return b''.join(ciphertext_blocks) #join all the ciphertext blocks together and return
-
+'''
 def secure_PRP(key, input_block):
     cipher = AES.new(key, AES.MODE_CBC, iv=0x00)
     return cipher.encrypt(input_block)
