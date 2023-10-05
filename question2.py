@@ -34,3 +34,26 @@ def nsfr(N, extra_bit):
 
     return N
 
+def filter(z, y, x8, x7, x6, x5, x4, x3, x2, x1):
+    result_bit = z ^ y ^ (x1 & x2) ^ (x3 & x4) ^ (x5 & x6) ^ (x7 & x8)
+    return result_bit & 1
+
+def babyGrain(L, N):
+    extra_bit = L >> 23
+    L = lsfr(L)
+    N = nsfr(N, extra_bit)
+
+    z = (L >> 0) & 1
+    y = (N >> 1) & 1
+    x8 = (N >> 4) & 1
+    x7 = (N >> 3) & 1
+    x6 = (L >> 1) & 1
+    x5 = (N >> 0) & 1
+    x4 = (L >> 5) & 1
+    x3 = (L >> 10) & 1
+    x2 = (L >> 16) & 1
+    x1 = (N >> 23) & 1
+
+    output = filter(z, y, x8. x7, x6, x5, x4, x3, x2, x1)
+
+    return output
