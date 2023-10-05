@@ -7,9 +7,7 @@ def lsfr(L):
     feedback_bit = bit24 ^ bit23 ^ bit22 ^ bit17
 
     L<<=1
-
     L|=feedback_bit
-
     L &= 0xFFFFFF
 
     return L
@@ -36,12 +34,13 @@ def nsfr(N, extra_bit):
 
     return N
 
-def filter(z, y, x8, x7, x6, x5, x4, x3, x2, x1):
+def filter(bitlist):
+    z, y, x8, x7, x6, x5, x4, x3, x2, x1 = bitlist
     result_bit = z ^ y ^ (x1 & x2) ^ (x3 & x4) ^ (x5 & x6) ^ (x7 & x8)
     return result_bit & 1
 
 def babyGrain(L, N):
-    extra_bit = L >> 23
+    extra_bit = (L >> 23) & 1
     L = lsfr(L)
     N = nsfr(N, extra_bit)
 
@@ -56,6 +55,8 @@ def babyGrain(L, N):
     x2 = (L >> 16) & 1
     x1 = (N >> 23) & 1
 
-    output = filter(z, y, x8. x7, x6, x5, x4, x3, x2, x1)
+    bitlist = [z, y, x8, x7, x6, x5, x4, x3, x2, x1]
+
+    output = filter(bitlist)
 
     return output
