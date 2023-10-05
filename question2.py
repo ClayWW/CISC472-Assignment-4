@@ -11,3 +11,26 @@ def lsfr(L):
     L|=(feedback_bit << 23)
 
     return L
+
+def nsfr(N, extra_bit):
+    N1 = N & 1
+    N2 = (N >> 1) & 1
+    N3 = (N >> 2) & 1
+    N5 = (N >> 4) & 1
+    N6 = (N >> 5) & 1
+    N10 = (N >> 9) & 1
+    N12 = (N >> 11) & 1
+    N15 = (N >> 14) & 1
+    N18 = (N >> 17) & 1
+    N20 = (N >> 19) & 1
+    N22 = (N >> 21) & 1
+    N24 = (N >> 23) & 1
+
+    new_N = (extra_bit ^ N1 ^ N2 ^ N5 ^ N15 ^ N20 ^ (N3 & N6) ^ (N10 & N12) ^ (N18 & N22 & N24)) & 1
+
+    N >>= 1
+
+    N |= (new_N << 23)
+
+    return N
+
