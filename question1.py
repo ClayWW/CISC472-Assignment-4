@@ -1,7 +1,5 @@
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-from Crypto.Util import Counter
-from Crypto.Util.Padding import pad, unpad
+from Crypto.Util.Padding import pad
 
 #xor operation that takes in two strings of bytes
 def xor(a, b):
